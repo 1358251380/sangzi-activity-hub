@@ -1,0 +1,34 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建产物
+web/dist/
+coverage/
+
+# 数据库（本地数据不入库）
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# 环境变量（含敏感配置，绝不提交）
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+logs/
+
+# 编辑器 / 系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Vite 缓存
+.vite/
+
+# 临时下载（WSL/Docker 安装包等，不入库）
+.download/

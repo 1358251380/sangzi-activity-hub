@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    name: 测试与构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 安装后端依赖
+        run: npm --prefix server ci
+
+      - name: 后端测试（status / validate / api）
+        run: npm --prefix server test
+
+      - name: 安装前端依赖
+        run: npm --prefix web ci
+
+      - name: 前端纯函数测试（时间轴坐标映射）
+        run: npm --prefix web test
+
+      - name: 构建前端
+        run: npm --prefix web run build

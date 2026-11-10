@@ -1,0 +1,20 @@
+{
+  "name": "campus-activity-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "校园活动聚合与时间轴系统 — 桑梓实验室 2026 纳新项目（运维方向）",
+  "type": "module",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "setup": "npm --prefix server install && npm --prefix web install",
+    "seed": "npm --prefix server run seed",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix server start",
+    "test": "npm --prefix server test",
+    "test:all": "npm --prefix server test && npm --prefix web test",
+    "verify": "node scripts/verify.mjs"
+  }
+}

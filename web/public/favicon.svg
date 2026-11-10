@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="桑梓活动聚合">
+  <!-- 原创标识：圆角方块 = 校园围墙；横条 = 活动区间；圆点 = 报名截止时刻；嫩芽 = 桑梓 -->
+  <rect width="64" height="64" rx="14" fill="#2563EB"/>
+  <rect x="12" y="30" width="30" height="7" rx="3.5" fill="#FFFFFF" opacity="0.95"/>
+  <circle cx="45" cy="33.5" r="5" fill="#FACC15"/>
+  <path d="M20 24c0-6 4-10 10-10 0 6-4 10-10 10z" fill="#A7F3D0"/>
+  <circle cx="20" cy="46" r="2.5" fill="#FFFFFF" opacity="0.7"/>
+  <circle cx="30" cy="46" r="2.5" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="40" cy="46" r="2.5" fill="#FFFFFF" opacity="0.3"/>
+</svg>

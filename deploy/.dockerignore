@@ -1,0 +1,16 @@
+# 构建镜像时排除的内容：减小上下文、避免把本地依赖和本地数据带进镜像
+.git
+.github
+node_modules
+**/node_modules
+web/dist
+data/*.db
+data/*.db-shm
+data/*.db-wal
+.npm-cache
+.pnpm-store
+.verify
+docs/screenshots
+*.log
+.env
+.env.local
