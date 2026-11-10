@@ -27,26 +27,38 @@ function run(args, cwd) {
   return r.status ?? 1;
 }
 
-/** 跑某个目录下所有 *.test.js */
-function runTests(dir, label) {
-  heading(`${label} 测试`);
-  const files = readdirSync(dir).filter((f) => f.endsWith('.test.js'));
+/** 递归收集目录下所有 *.test.js（跳过 node_modules 与隐藏目录） */
+function collectTests(dir, acc = []) {
+  if (!existsSync(dir)) return acc;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) collectTests(full, acc);
+    else if (entry.name.endsWith('.test.js')) acc.push(full);
+  }
+  return acc;
+}
+
+/** 逐个文件运行测试（用 inherit，结果与 `node --test` 等价但更稳） */
+function runTestFiles(files, label) {
+  heading(`${label} 测试（${files.length} 个文件）`);
   if (files.length === 0) {
     console.log('  （没有找到测试文件）');
     return;
   }
   for (const f of files.sort()) {
-    const code = run([join(dir, f)], ROOT);
-    console.log(`  ${code === 0 ? '✔' : '✖'} ${f}`);
+    const code = run([f], ROOT);
+    const rel = f.replace(`${ROOT}\\`, '').replace(`${ROOT}/`, '');
+    console.log(`  ${code === 0 ? '✔' : '✖'} ${rel}`);
     if (code !== 0) failed += 1;
   }
 }
 
 // 1. 后端测试
-runTests(join(ROOT, 'server', 'test'), '后端');
+runTestFiles(collectTests(join(ROOT, 'server', 'test')), '后端');
 
-// 2. 前端纯函数测试
-runTests(join(ROOT, 'web', 'src', 'lib'), '前端纯函数');
+// 2. 前端测试（lib + api + components，递归收集）
+runTestFiles(collectTests(join(ROOT, 'web', 'src')), '前端');
 
 // 3. 构建产物检查
 heading('构建产物检查');

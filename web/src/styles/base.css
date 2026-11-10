@@ -75,6 +75,9 @@ svg {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  /* 兜底：任何子元素意外超宽都不产生页面级横向滚动。
+     用 clip 而非 hidden —— clip 不会创建滚动容器，内部的可滚动区域（时间轴）不受影响。 */
+  overflow-x: clip;
 }
 
 .nav {
@@ -160,6 +163,7 @@ svg {
   flex: 1;
   width: 100%;
   max-width: var(--max-width);
+  min-width: 0;
   margin: 0 auto;
   padding: var(--s-5) var(--s-4) var(--s-7);
 }
@@ -181,6 +185,14 @@ svg {
   gap: var(--s-4);
   margin-bottom: var(--s-5);
   flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* flex 子项默认按 max-content 撑开，长段落会把容器顶宽。
+   min-width: 0 让文本能正常换行 —— 这是移动端横向溢出的常见根因。 */
+.page-head > div {
+  min-width: 0;
+  flex: 1 1 260px;
 }
 
 .page-title {
@@ -337,6 +349,26 @@ svg {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* 表单级错误摘要 */
+.form-summary {
+  margin-bottom: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-danger-weak);
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 13px;
+}
+
+.form-summary ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.form-summary li + li {
+  margin-top: 2px;
 }
 
 .field-row {
@@ -1244,6 +1276,50 @@ svg {
   white-space: nowrap;
 }
 
+/* ============================ 无障碍 ============================ */
+
+/* 跳到主内容：默认移出视口，键盘聚焦时滑入 */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 200;
+  padding: 10px 16px;
+  border-radius: var(--r-md);
+  background: var(--c-primary);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--sh-md);
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 8px;
+  color: #fff;
+}
+
+/* main 用 tabIndex=-1 接收程序化焦点；去掉它的焦点描边（它本身不可交互） */
+.main:focus {
+  outline: none;
+}
+
+/* 尊重系统「减少动态效果」设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .activity-card:hover,
+  .tl-bar:hover {
+    transform: none;
+  }
+}
+
 /* ============================ 响应式 ============================ */
 
 @media (max-width: 900px) {
@@ -1259,6 +1335,8 @@ svg {
 @media (max-width: 720px) {
   :root {
     --nav-height: 56px;
+    /* 时间轴左侧标题列收窄，把宽度让给色条 */
+    --tl-label-w: 112px;
   }
 
   .nav-inner {
@@ -1270,13 +1348,26 @@ svg {
     display: none;
   }
 
+  /* 触摸目标高度：不低于 40px，避免误触 */
   .nav-link {
-    padding: 6px 10px;
+    padding: 10px 10px;
     font-size: 13px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .btn {
+    min-height: 40px;
+  }
+
+  .btn-sm {
+    min-height: 34px;
   }
 
   .main {
-    padding: var(--s-4) var(--s-3) var(--s-6);
+    padding: var(--s-4) var(--s-3);
+    padding-bottom: calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
   }
 
   .page-title {
@@ -1292,6 +1383,30 @@ svg {
     padding-right: var(--s-2);
   }
 
+  /* 画布放宽一点点即可，配合收窄的标题列，手机上一屏能看全 */
+  .tl-canvas {
+    min-width: 540px;
+  }
+
+  .tl-row,
+  .tl-track {
+    min-height: 44px;
+  }
+
+  .tl-label-title {
+    font-size: 12px;
+  }
+
+  .timeline-toolbar {
+    gap: var(--s-2);
+  }
+
+  .timeline-stats {
+    width: 100%;
+    margin-left: 0;
+    justify-content: space-between;
+  }
+
   .timeline-range {
     min-width: 96px;
     font-size: 14px;
@@ -1303,5 +1418,57 @@ svg {
 
   .detail-card {
     padding: var(--s-4);
+  }
+
+  .filter-bar {
+    gap: var(--s-2);
+  }
+
+  .filter-search {
+    flex: 1 1 100%;
+  }
+
+  .filter-bar .select {
+    flex: 1 1 44%;
+    min-width: 0;
+  }
+
+  .filter-count {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --tl-label-w: 88px;
+  }
+
+  /* 375px 下品牌文字与导航链接合起来会撑破一行，只保留图标 */
+  .nav-brand-text {
+    display: none;
+  }
+
+  .nav-inner {
+    gap: 2px;
+    padding: 0 var(--s-2);
+  }
+
+  .nav-link {
+    padding: 8px 7px;
+    font-size: 12px;
+    min-height: 38px;
+  }
+
+  .tl-canvas {
+    min-width: 470px;
+  }
+
+  .detail-badges .badge {
+    font-size: 11px;
+  }
+
+  .page-title {
+    font-size: 18px;
   }
 }

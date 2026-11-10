@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { STATUS_BAR_COLORS, typeLabel } from '../lib/labels.js';
-import { fmtShort } from '../lib/time.js';
+import { STATUS_BAR_COLORS, statusLabel, typeLabel } from '../lib/labels.js';
+import { fmtDate, fmtShort } from '../lib/time.js';
 
 /**
  * 色条宽度（百分比）低于该阈值时不把标题塞进色条内部 ——
@@ -18,6 +18,25 @@ const LABEL_RIGHT_MIN_ROOM = 24;
  * lib/timeline.js 的纯函数算好，本组件只负责把它们画出来。
  * 这样边界情况（裁剪、跨月、单日、除零）全部在单测里验证过，UI 改动不会破坏正确性。
  */
+/**
+ * 为屏幕阅读器生成色条的文字描述。
+ * 色条的颜色承载了状态信息，但颜色不能是唯一的信息载体 —— 所以把状态、起止、
+ * 截止时间都写进 aria-label，读屏用户能获得与视觉用户等价的全部信息。
+ */
+function describeBar(activity, row) {
+  const parts = [
+    activity.title,
+    typeLabel(activity.type),
+    statusLabel(activity.status),
+    `${fmtDate(activity.startAt)} 至 ${fmtDate(activity.endAt)}`,
+    `持续 ${row.durationDays} 天`,
+    `报名截止 ${fmtDate(activity.signupDeadline)}`,
+  ];
+  if (row.clippedStart) parts.push('开始时间早于当前视图');
+  if (row.clippedEnd) parts.push('结束时间晚于当前视图');
+  return parts.join('，');
+}
+
 export default function TimelineChart({ model, window: win, onSelect }) {
   const { rows, ticks, todayPct } = model;
   const navigate = useNavigate();
@@ -28,7 +47,7 @@ export default function TimelineChart({ model, window: win, onSelect }) {
   };
 
   return (
-    <div className="tl-body">
+    <div className="tl-body" role="group" aria-label={`活动时间轴，共 ${rows.length} 个活动`}>
       <div className="tl-canvas">
         {/* 时间轴刻度 */}
         <div className="tl-axis">
@@ -77,23 +96,24 @@ export default function TimelineChart({ model, window: win, onSelect }) {
                     {a.title}
                   </div>
                   <div className="tl-label-meta">
-                    {typeLabel(a.type)} · {row.durationDays} 天
+                    {typeLabel(a.type)} · {row.durationDays} 天 · {statusLabel(a.status)}
                   </div>
                 </div>
 
                 <div className="tl-track">
-                  {/* 竖向网格线，与刻度对齐 */}
+                  {/* 竖向网格线，与刻度对齐（纯装饰） */}
                   {ticks.map((t, i) => (
                     <div
                       key={`g-${i}`}
                       className={`tl-grid-line${t.isAnchor ? ' is-anchor' : ''}`}
                       style={{ left: `${t.ratio}%` }}
+                      aria-hidden="true"
                     />
                   ))}
 
-                  {/* 今天基准线：贯穿每一行，保证竖直方向连续 */}
+                  {/* 今天基准线：贯穿每一行，保证竖直方向连续（纯装饰） */}
                   {todayPct !== null ? (
-                    <div className="tl-today-line" style={{ left: `${todayPct}%` }} />
+                    <div className="tl-today-line" style={{ left: `${todayPct}%` }} aria-hidden="true" />
                   ) : null}
 
                   {/* 活动区间：宽度 ∝ 持续时长 */}
@@ -106,6 +126,7 @@ export default function TimelineChart({ model, window: win, onSelect }) {
                       '--bar-color': color,
                     }}
                     onClick={() => go(a.id)}
+                    aria-label={describeBar(a, row)}
                     title={`${a.title}\n${fmtShort(a.startAt)} → ${fmtShort(a.endAt)}\n报名截止 ${fmtShort(
                       a.signupDeadline,
                     )}`}
@@ -137,9 +158,13 @@ export default function TimelineChart({ model, window: win, onSelect }) {
                     </span>
                   ) : null}
 
-                  {/* 报名截止：与色条形状刻意不同的独立标记 */}
+                  {/* 报名截止：与色条形状刻意不同的独立标记（信息已并入色条的 aria-label） */}
                   {row.deadlineInWindow ? (
-                    <div className="tl-deadline" style={{ left: `${row.deadlinePct}%` }}>
+                    <div
+                      className="tl-deadline"
+                      style={{ left: `${row.deadlinePct}%` }}
+                      aria-hidden="true"
+                    >
                       <span className="tl-deadline-label">报名截止</span>
                     </div>
                   ) : null}

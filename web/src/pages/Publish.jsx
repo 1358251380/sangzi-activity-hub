@@ -189,6 +189,18 @@ export default function Publish() {
       </div>
 
       <form className="card card-pad" onSubmit={handleSubmit} noValidate>
+        {/* 表单级错误摘要：屏幕阅读器会立即播报全部问题，键盘用户也不必逐字段找红色文字 */}
+        {Object.keys(errors).length > 0 ? (
+          <div className="form-summary" role="alert" aria-live="assertive">
+            <strong>有 {Object.keys(errors).length} 项需要修改：</strong>
+            <ul>
+              {Object.entries(errors).map(([key, msg]) => (
+                <li key={key}>{msg}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
         <div className="field-row">
           <div className="field">
             <label className="field-label" htmlFor="f-title">

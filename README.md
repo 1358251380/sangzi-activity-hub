@@ -245,7 +245,10 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | `server/test/validate.test.js` | 20 | 必填/长度/枚举/时间关系/链接协议/查询参数降级 |
 | `server/test/api.test.js` | 31 | 真实起 HTTP 服务，覆盖 P0 全链路 + 安全头 |
 | `web/src/lib/timeline.test.js` | 14 | 坐标线性性、裁剪、跨月、除零、排序、刻度自适应 |
-| **合计** | **79** | |
+| `web/src/lib/time.test.js` | 23 | 日期格式化、区间压缩、时长取整、截止倒计时、表单值互转 |
+| `web/src/api/client.test.js` | 15 | 查询串拼装、请求方法、422/404/网络异常 → ApiError 映射 |
+| `web/src/lib/myPublish.test.js` | 11 | localStorage 增删查、去重、脏数据与不可写场景的降级 |
+| **合计** | **128** | |
 
 详细结果见 [docs/05-测试记录.md](docs/05-测试记录.md)
 
@@ -258,8 +261,9 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | 1 | **Docker 方案未实测通过（环境阻塞，非代码问题）** | `deploy/` 下的镜像构建未经真实 `docker compose up` 验证 | 开发机 Windows 的组件库损坏（`0x800f0915`／`14098`），无法启用「虚拟机平台」，WSL2 与 Docker Desktop 均无法启动。Dockerfile 与 compose 已按多阶段构建 + 数据卷 + healthcheck 编写并逐行审查，但**未经运行验证，因此不声明其通过**。排查全过程见 [docs/06 §P14](docs/06-问题排查记录.md)。**请在正常机器上执行一次 `docker compose -f deploy/docker-compose.yml up -d --build` 后再视为通过** |
 | 2 | CI 未真实运行 | `.github/workflows/ci.yml` 只是配置 | 需先 `git init` 并推送到 GitHub 才会触发 |
 | 3 | 无公网演示地址 | 只能本地运行 | 任务书允许"提供能按说明在本地启动的项目" |
-| 4 | 时间轴在超窄屏（< 720px）需横向滚动 | 移动端体验一般 | 已设 `min-width: 720px` 并允许横向滚动；列表视图在手机上完全可用 |
+| 4 | 时间轴在窄屏下需横向滚动 | 375px 下时间轴画布（470px）超出视口，需左右滑动查看完整跨度 | 已在 375px 视口验证：页面本身无横向溢出，只有时间轴区域可横向滚动；列表/详情/发布页完全自适应。截图见 [mobile-timeline.png](docs/screenshots/mobile-timeline.png) |
 | 5 | 无账号体系 | 编辑/删除权限边界依赖浏览器 localStorage | 任务书明确允许简化身份；「我的发布」用本地记录划定范围，避免任意删除他人活动 |
+| 6 | 表单仅在顶层给出错误摘要 + 字段旁红字，未逐字段做 `aria-describedby` 关联 | 读屏用户需先听摘要，再定位到具体字段 | 已用表单级 `role="alert"` 摘要覆盖主要场景；逐字段关联列为后续改进 |
 
 ---
 
@@ -280,5 +284,5 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | 可运行的项目 | 本文档第 4 节，三步启动 |
 | 源代码 | `server/` + `web/`，不含密码密钥（`.env` 已在 `.gitignore`） |
 | README（目标/功能/技术方案/启动/已知问题/AI 使用） | 本文件 |
-| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（79 项自动化 + 6 项手工场景） |
+| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（128 项自动化 + 6 项手工场景） |
 | 答辩演示 | **[docs/09-答辩演示脚本.md](docs/09-答辩演示脚本.md)**（9 分钟逐字脚本 + 12 条高频追问答案 + 故障预案） |

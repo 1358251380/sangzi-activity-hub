@@ -84,8 +84,14 @@ export function CommentForm({ onSubmit }) {
           onChange={(e) => setNickname(e.target.value)}
           placeholder="怎么称呼你（不需要真实姓名）"
           maxLength={40}
+          aria-invalid={errors.nickname ? 'true' : undefined}
+          aria-describedby={errors.nickname ? 'err-nickname' : undefined}
         />
-        {errors.nickname ? <span className="field-error">{errors.nickname}</span> : null}
+        {errors.nickname ? (
+          <span className="field-error" id="err-nickname" role="alert">
+            {errors.nickname}
+          </span>
+        ) : null}
       </div>
 
       <div className="field">
@@ -100,10 +106,14 @@ export function CommentForm({ onSubmit }) {
           placeholder="补充报名经验、材料要求、注意事项…"
           rows={3}
           maxLength={600}
+          aria-invalid={errors.content ? 'true' : undefined}
+          aria-describedby={errors.content ? 'err-content' : undefined}
         />
         <div className="row-between">
           {errors.content ? (
-            <span className="field-error">{errors.content}</span>
+            <span className="field-error" id="err-content" role="alert">
+              {errors.content}
+            </span>
           ) : (
             <span className="field-hint">评论用于补充信息，请勿填写他人个人信息</span>
           )}
