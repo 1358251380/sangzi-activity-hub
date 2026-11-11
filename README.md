@@ -126,7 +126,7 @@ npm start
 |---|---|---|---|
 | **开发模式** | `npm run dev` | 后端 3001 + 前端 5173（热更新），Vite 代理 `/api` | ✅ 已验证 |
 | **生产模式** | `npm run build && npm start` | 单端口 3001 同时托管 API 与前端产物 | ✅ 已验证 |
-| **容器** | `docker compose -f deploy/docker-compose.yml up -d --build` | 一键启动，数据挂卷 | ⚠️ 见「已知问题」 |
+| **容器** | `docker compose -f deploy/docker-compose.yml up -d --build` | 一键启动，数据挂卷 | ✅ 已验证（构建 30s、`healthy`、重启后数据仍在） |
 
 Windows 用户也可以直接用脚本：`scripts\setup.ps1` → `scripts\start.ps1`
 
@@ -258,12 +258,12 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 
 | # | 问题 | 影响 | 处理 |
 |---|---|---|---|
-| 1 | **Docker 方案未实测通过（环境阻塞，非代码问题）** | `deploy/` 下的镜像构建未经真实 `docker compose up` 验证 | 开发机 Windows 的组件库损坏（`0x800f0915`／`14098`），无法启用「虚拟机平台」，WSL2 与 Docker Desktop 均无法启动。Dockerfile 与 compose 已按多阶段构建 + 数据卷 + healthcheck 编写并逐行审查，但**未经运行验证，因此不声明其通过**。排查全过程见 [docs/06 §P14](docs/06-问题排查记录.md)。**请在正常机器上执行一次 `docker compose -f deploy/docker-compose.yml up -d --build` 后再视为通过** |
-| 2 | CI 未真实运行 | `.github/workflows/ci.yml` 只是配置 | 需先 `git init` 并推送到 GitHub 才会触发 |
-| 3 | 无公网演示地址 | 只能本地运行 | 任务书允许"提供能按说明在本地启动的项目" |
-| 4 | 时间轴在窄屏下需横向滚动 | 375px 下时间轴画布（470px）超出视口，需左右滑动查看完整跨度 | 已在 375px 视口验证：页面本身无横向溢出，只有时间轴区域可横向滚动；列表/详情/发布页完全自适应。截图见 [mobile-timeline.png](docs/screenshots/mobile-timeline.png) |
-| 5 | 无账号体系 | 编辑/删除权限边界依赖浏览器 localStorage | 任务书明确允许简化身份；「我的发布」用本地记录划定范围，避免任意删除他人活动 |
-| 6 | 表单仅在顶层给出错误摘要 + 字段旁红字，未逐字段做 `aria-describedby` 关联 | 读屏用户需先听摘要，再定位到具体字段 | 已用表单级 `role="alert"` 摘要覆盖主要场景；逐字段关联列为后续改进 |
+| 1 | CI 未真实运行 | `.github/workflows/ci.yml` 只是配置 | 需推送到 GitHub 才会触发（本地 `npm test` / `npm run verify` 均已实跑通过） |
+| 2 | 无公网演示地址 | 只能本地运行 | 任务书允许"提供能按说明在本地启动的项目" |
+| 3 | 时间轴在窄屏下需横向滚动 | 375px 下时间轴画布（470px）超出视口，需左右滑动查看完整跨度 | 已在 375px 视口验证：页面本身无横向溢出，只有时间轴区域可横向滚动；列表/详情/发布页完全自适应。截图见 [mobile-timeline.png](docs/screenshots/mobile-timeline.png) |
+| 4 | 无账号体系 | 编辑/删除权限边界依赖浏览器 localStorage | 任务书明确允许简化身份；「我的发布」用本地记录划定范围，避免任意删除他人活动 |
+| 5 | 表单仅在顶层给出错误摘要 + 字段旁红字，未逐字段做 `aria-describedby` 关联 | 读屏用户需先听摘要，再定位到具体字段 | 已用表单级 `role="alert"` 摘要覆盖主要场景；逐字段关联列为后续改进 |
+| 6 | 容器界面语言为英文 | Docker Desktop 无中文语言包 | 仅为使用体验问题，不影响功能；设置项按英文对照即可 |
 
 ---
 

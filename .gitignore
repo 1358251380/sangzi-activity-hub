@@ -34,6 +34,3 @@ Thumbs.db
 .download/
 .verify/
 
-# 临时交接/工作笔记（不入库；交付前可删除）
-docs/10-Docker安装交接说明.md
-
