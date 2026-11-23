@@ -41,3 +41,6 @@ _deliverables/
 
 # TLS 私钥与证书（绝不入库；用 scripts/gen-cert 生成）
 deploy/nginx/certs/
+
+# 内部招新材料（不纳入版本库）
+*.docx
