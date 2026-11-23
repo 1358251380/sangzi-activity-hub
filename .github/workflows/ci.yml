@@ -20,13 +20,16 @@ jobs:
       - name: 安装后端依赖
         run: npm --prefix server ci
 
-      - name: 后端测试（status / validate / api）
+      # 注意：脚本是 `node --test`（不带目录参数）。
+      # Node 24 下 `node --test test/` 会把 `test/` 当作模块去加载并报 MODULE_NOT_FOUND，
+      # 必须依赖自动发现（递归匹配 **/*.test.js，自动跳过 node_modules）。
+      - name: 后端测试（6 个文件 / 101 项）
         run: npm --prefix server test
 
       - name: 安装前端依赖
         run: npm --prefix web ci
 
-      - name: 前端纯函数测试（时间轴坐标映射）
+      - name: 前端测试（4 个文件 / 63 项）
         run: npm --prefix web test
 
       - name: 构建前端
