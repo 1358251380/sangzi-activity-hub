@@ -44,3 +44,6 @@ deploy/nginx/certs/
 
 # 内部招新材料（不纳入版本库）
 *.docx
+
+# 个人材料（答辩准备等，不入库）
+_personal/
