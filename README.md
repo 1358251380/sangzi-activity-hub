@@ -132,14 +132,29 @@ Windows 用户也可以直接用脚本：`scripts\setup.ps1` → `scripts\start.
 
 ### 环境变量
 
-复制 `.env.example` 为 `.env`（可选，不建也能跑）：
+复制 `.env.example` 为 `.env`（可选，不建也能跑）。
+
+**启动即校验（fail-fast）**：配置非法时服务会直接退出并列出全部错误，不会带着错配置对外服务。
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
-| `PORT` | `3001` | 后端监听端口 |
+| `PORT` | `3001` | 后端监听端口（1–65535，非法则启动失败） |
+| `HOST` | `0.0.0.0` | 监听地址；容器内必须是 `0.0.0.0` |
 | `DB_PATH` | `./data/app.db` | SQLite 文件路径，相对项目根目录解析 |
-| `NODE_ENV` | `development` | `production` 时托管 `web/dist` |
+| `NODE_ENV` | `development` | `development` / `production` / `test` |
+| `LOG_FORMAT` | 生产 `json` / 其它 `text` | 日志格式：JSON 便于采集，text 便于人读 |
+| `TRUST_PROXY` | `1` | 放在反向代理后面时保持 `1`，以正确识别客户端 IP |
 | `CORS_ORIGIN` | `http://localhost:5173` | 仅开发期需要；生产同源无需跨域 |
+| `BACKUP_DIR` / `BACKUP_KEEP` | `./data/backups` / `7` | 仅备份脚本使用 |
+
+### 运维命令
+
+```bash
+npm run backup        # 在线热备（VACUUM INTO），自动校验 + 保留最近 7 份
+npm run backup:drill  # 恢复演练：临时目录里删库再还原，验证备份真的可用
+```
+
+备份产物在 `data/backups/`（已 gitignore）。为什么不能直接复制 `app.db`、以及真实故障时怎么恢复，见 [docs/04 §9](docs/04-部署与质量方案.md)。
 
 ---
 
@@ -241,14 +256,16 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 
 | 测试文件 | 数量 | 覆盖 |
 |---|---|---|
+| `server/test/config.test.js` | 17 | 配置 fail-fast：PORT / NODE_ENV / DB_PATH / LOG_FORMAT / TRUST_PROXY / CORS 校验 |
 | `server/test/status.test.js` | 14 | 四态派生、边界时刻、正交状态、非法输入 |
 | `server/test/validate.test.js` | 20 | 必填/长度/枚举/时间关系/链接协议/查询参数降级 |
 | `server/test/api.test.js` | 31 | 真实起 HTTP 服务，覆盖 P0 全链路 + 安全头 |
+| `server/test/serving.test.js` | 14 | requestId 透传/生成、错误体一致性、缓存分层、gzip 压缩 |
 | `web/src/lib/timeline.test.js` | 14 | 坐标线性性、裁剪、跨月、除零、排序、刻度自适应 |
 | `web/src/lib/time.test.js` | 23 | 日期格式化、区间压缩、时长取整、截止倒计时、表单值互转 |
 | `web/src/api/client.test.js` | 15 | 查询串拼装、请求方法、422/404/网络异常 → ApiError 映射 |
 | `web/src/lib/myPublish.test.js` | 11 | localStorage 增删查、去重、脏数据与不可写场景的降级 |
-| **合计** | **128** | |
+| **合计** | **159** | |
 
 详细结果见 [docs/05-测试记录.md](docs/05-测试记录.md)
 
@@ -284,5 +301,5 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | 可运行的项目 | 本文档第 4 节，三步启动 |
 | 源代码 | `server/` + `web/`，不含密码密钥（`.env` 已在 `.gitignore`） |
 | README（目标/功能/技术方案/启动/已知问题/AI 使用） | 本文件 |
-| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（128 项自动化 + 6 项手工场景） |
+| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（159 项自动化 + 6 项手工场景） |
 | 答辩演示 | **[docs/09-答辩演示脚本.md](docs/09-答辩演示脚本.md)**（9 分钟逐字脚本 + 12 条高频追问答案 + 故障预案） |
