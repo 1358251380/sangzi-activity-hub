@@ -51,10 +51,11 @@ VOLUME ["/app/data"]
 
 EXPOSE 3001
 
-# 健康检查直接打业务接口，而不是只看端口通不通：
-# 数据库挂了也能被发现（/api/health 在 DB 不可用时返回 503）
+# 健康检查打 readiness，而不是只看端口通不通：
+#   /api/health/ready 在数据库不可用时返回 503 → 容器被标记 unhealthy
+#   注意：不要用 /api/health/live 做这个探针 —— 它不查库，永远 200，起不到「就绪」判断作用
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # 启动前补种子数据；seed 在库非空时会自动跳过，因此可重复执行
 CMD ["sh", "-c", "node server/src/seed.js; exec node server/src/index.js"]

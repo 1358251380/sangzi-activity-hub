@@ -126,7 +126,19 @@ npm start
 |---|---|---|---|
 | **开发模式** | `npm run dev` | 后端 3001 + 前端 5173（热更新），Vite 代理 `/api` | ✅ 已验证 |
 | **生产模式** | `npm run build && npm start` | 单端口 3001 同时托管 API 与前端产物 | ✅ 已验证 |
-| **容器** | `docker compose -f deploy/docker-compose.yml up -d --build` | 一键启动，数据挂卷 | ✅ 已验证（构建 30s、`healthy`、重启后数据仍在） |
+| **容器（含反代）** | `npm run cert` → `docker compose -f deploy/docker-compose.yml up -d --build` | Nginx 网关 + 应用容器，数据挂卷 | ✅ 已验证（healthy / TLS / 限流 / 数据持久化） |
+
+**容器方式说明**（入口：`http://localhost:8080`，HTTPS：`https://localhost:8443`）
+
+1. 首次启动前生成自签证书：`npm run cert`
+   （需要 `openssl`；Windows 上通常随 Git for Windows 提供。Linux/macOS 用 `bash scripts/gen-cert.sh`）
+2. `docker compose -f deploy/docker-compose.yml up -d --build`
+3. 拓扑：`浏览器 → nginx(8080/8443) → app:3001`。**应用容器不发布端口**，只能经网关访问
+
+| 能力 | 由谁提供 |
+|---|---|
+| TLS 终止、gzip、限流（20 r/s + burst 40）、安全响应头、`/healthz` | Nginx |
+| 业务 API、前端产物、liveness / readiness 探针 | app 容器 |
 
 Windows 用户也可以直接用脚本：`scripts\setup.ps1` → `scripts\start.ps1`
 
@@ -152,7 +164,16 @@ Windows 用户也可以直接用脚本：`scripts\setup.ps1` → `scripts\start.
 ```bash
 npm run backup        # 在线热备（VACUUM INTO），自动校验 + 保留最近 7 份
 npm run backup:drill  # 恢复演练：临时目录里删库再还原，验证备份真的可用
+npm run cert          # 生成 Nginx 用的自签 TLS 证书（仅容器方式需要）
 ```
+
+压测（零依赖，可测任意端点）：
+
+```bash
+node scripts/loadtest.mjs 'http://127.0.0.1:8080/api/activities?pageSize=20' --duration=8 --concurrency=10
+```
+
+实测容量基线与瓶颈分析见 [docs/12-容量基线与压测.md](docs/12-容量基线与压测.md)。
 
 备份产物在 `data/backups/`（已 gitignore）。为什么不能直接复制 `app.db`、以及真实故障时怎么恢复，见 [docs/04 §9](docs/04-部署与质量方案.md)。
 
@@ -261,11 +282,12 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | `server/test/validate.test.js` | 20 | 必填/长度/枚举/时间关系/链接协议/查询参数降级 |
 | `server/test/api.test.js` | 31 | 真实起 HTTP 服务，覆盖 P0 全链路 + 安全头 |
 | `server/test/serving.test.js` | 14 | requestId 透传/生成、错误体一致性、缓存分层、gzip 压缩 |
+| `server/test/health.test.js` | 5 | liveness / readiness 分层：DB 挂掉时 live 仍 200、ready 503 |
 | `web/src/lib/timeline.test.js` | 14 | 坐标线性性、裁剪、跨月、除零、排序、刻度自适应 |
 | `web/src/lib/time.test.js` | 23 | 日期格式化、区间压缩、时长取整、截止倒计时、表单值互转 |
 | `web/src/api/client.test.js` | 15 | 查询串拼装、请求方法、422/404/网络异常 → ApiError 映射 |
 | `web/src/lib/myPublish.test.js` | 11 | localStorage 增删查、去重、脏数据与不可写场景的降级 |
-| **合计** | **159** | |
+| **合计** | **164** | |
 
 详细结果见 [docs/05-测试记录.md](docs/05-测试记录.md)
 
@@ -301,5 +323,5 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | 可运行的项目 | 本文档第 4 节，三步启动 |
 | 源代码 | `server/` + `web/`，不含密码密钥（`.env` 已在 `.gitignore`） |
 | README（目标/功能/技术方案/启动/已知问题/AI 使用） | 本文件 |
-| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（159 项自动化 + 6 项手工场景） |
+| 测试记录（≥3 个场景） | [docs/05-测试记录.md](docs/05-测试记录.md)（164 项自动化 + 6 项手工场景） |
 | 答辩演示 | **[docs/09-答辩演示脚本.md](docs/09-答辩演示脚本.md)**（9 分钟逐字脚本 + 12 条高频追问答案 + 故障预案） |

@@ -17,6 +17,7 @@
     "test:all": "npm --prefix server test && npm --prefix web test",
     "verify": "node scripts/verify.mjs",
     "backup": "node scripts/backup.mjs",
-    "backup:drill": "node scripts/backup-restore-drill.mjs"
+    "backup:drill": "node scripts/backup-restore-drill.mjs",
+    "cert": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gen-cert.ps1"
   }
 }

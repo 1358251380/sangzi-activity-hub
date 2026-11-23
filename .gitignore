@@ -38,3 +38,6 @@ Thumbs.db
 # 打包产物与暂存目录（不入库）
 _deliverables/
 .package/
+
+# TLS 私钥与证书（绝不入库；用 scripts/gen-cert 生成）
+deploy/nginx/certs/

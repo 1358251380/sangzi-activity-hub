@@ -15,21 +15,53 @@ import { HttpError } from '../middleware/errors.js';
 const STARTED_AT = Date.now();
 
 /**
- * GET /api/health —— 供 Docker healthcheck / 运维巡检使用。
- * 数据库不可用时返回 503，让编排层能感知故障而不只是看端口通。
+ * 健康检查（分层）。
+ *
+ * 为什么要分 liveness 与 readiness：
+ *   两者的语义完全不同，混用会导致「容器该不该重启」和「流量该不该转发」判断错。
+ *
+ *   - liveness（存活）：进程是否还能响应。只证明事件循环没死，**不查外部依赖**。
+ *     查库会导致：数据库短暂抖动 → 容器被判死亡 → 被重启 → 抖动被放大成雪崩。
+ *   - readiness（就绪）：现在能不能对外服务，**必须查 DB**。
+ *     不就绪时编排层应把流量摘走，但不必重启容器。
+ *
+ *   /api/health 保留为聚合视图（等同于 readiness + 运行信息），兼容既有调用与人工巡检。
  */
 export function healthRouter({ db }) {
   const router = Router();
-  router.get('/', (_req, res) => {
+
+  const snapshot = () => {
     const dbOk = pingDatabase(db);
-    res.status(dbOk ? 200 : 503).json({
+    return {
       status: dbOk ? 'ok' : 'degraded',
       db: dbOk ? 'ok' : 'error',
       uptime: Number(((Date.now() - STARTED_AT) / 1000).toFixed(1)),
       version: process.env.npm_package_version ?? '1.0.0',
       time: new Date().toISOString(),
+    };
+  };
+
+  // liveness：只证明进程活着，不依赖数据库
+  router.get('/live', (_req, res) => {
+    res.status(200).json({
+      status: 'alive',
+      uptime: Number(((Date.now() - STARTED_AT) / 1000).toFixed(1)),
+      time: new Date().toISOString(),
     });
   });
+
+  // readiness：依赖可用才返回 200，否则 503（编排层据此摘流量）
+  router.get('/ready', (_req, res) => {
+    const body = snapshot();
+    res.status(body.db === 'ok' ? 200 : 503).json(body);
+  });
+
+  // 聚合视图：人工巡检 / 既有脚本使用
+  router.get('/', (_req, res) => {
+    const body = snapshot();
+    res.status(body.db === 'ok' ? 200 : 503).json(body);
+  });
+
   return router;
 }
 
