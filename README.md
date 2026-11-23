@@ -1,5 +1,7 @@
 # 桑梓 · 校园活动聚合与时间轴系统
 
+[![CI](https://github.com/1358251380/sangzi-activity-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/1358251380/sangzi-activity-hub/actions/workflows/ci.yml)
+
 > 桑梓实验室 2026 纳新项目 · **运维方向**
 > 把分散在公众号、QQ 群、微信群里的校园活动信息聚合到一处，**以时间为主轴**呈现，并允许同学在活动下沉淀报名经验。
 
@@ -298,7 +300,7 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 
 | # | 问题 | 影响 | 处理 |
 |---|---|---|---|
-| 1 | CI 未真实运行 | `.github/workflows/ci.yml` 只是配置 | 需推送到 GitHub 才会触发（本地 `npm test` / `npm run verify` 均已实跑通过） |
+| 1 | 无公网演示地址 | 只能本地运行 | 任务书允许"提供能按说明在本地启动的项目" |
 | 2 | 无公网演示地址 | 只能本地运行 | 任务书允许"提供能按说明在本地启动的项目" |
 | 3 | 时间轴在窄屏下需横向滚动 | 375px 下时间轴画布（470px）超出视口，需左右滑动查看完整跨度 | 已在 375px 视口验证：页面本身无横向溢出，只有时间轴区域可横向滚动；列表/详情/发布页完全自适应。截图见 [mobile-timeline.png](docs/screenshots/mobile-timeline.png) |
 | 4 | 无账号体系 | 编辑/删除权限边界依赖浏览器 localStorage | 任务书明确允许简化身份；「我的发布」用本地记录划定范围，避免任意删除他人活动 |
