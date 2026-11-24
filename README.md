@@ -221,6 +221,7 @@ node scripts/loadtest.mjs 'http://127.0.0.1:8080/api/activities?pageSize=20' --d
 │  ├─ 11-Docker安装完成说明.md
 │  ├─ 12-容量基线与压测.md
 │  ├─ 13-Runbook.md            # 运维手册：启停 / 回滚 / 排障 / 巡检
+│  ├─ 14-后续优化路线图.md
 │  └─ screenshots/
 ├─ server/                   # 后端
 │  ├─ src/
