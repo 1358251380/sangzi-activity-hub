@@ -20,14 +20,22 @@ jobs:
       - name: 安装后端依赖
         run: npm --prefix server ci
 
+      # 安全门禁：只对生产依赖做扫描，只在高危/严重时失败。
+      # 若遇已知但暂未修复的告警，用 `npm audit --omit=dev` 本地复核后再决定是否放行。
+      - name: 依赖漏洞扫描（后端生产依赖）
+        run: npm --prefix server audit --omit=dev --audit-level=high
+
       # 注意：脚本是 `node --test`（不带目录参数）。
       # Node 24 下 `node --test test/` 会把 `test/` 当作模块去加载并报 MODULE_NOT_FOUND，
       # 必须依赖自动发现（递归匹配 **/*.test.js，自动跳过 node_modules）。
-      - name: 后端测试（6 个文件 / 101 项）
+      - name: 后端测试（8 个文件 / 116 项）
         run: npm --prefix server test
 
       - name: 安装前端依赖
         run: npm --prefix web ci
+
+      - name: 依赖漏洞扫描（前端依赖）
+        run: npm --prefix web audit --omit=dev --audit-level=high
 
       - name: 前端测试（4 个文件 / 63 项）
         run: npm --prefix web test

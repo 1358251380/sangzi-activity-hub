@@ -27,6 +27,9 @@ export const DEFAULTS = {
   NODE_ENV: 'development',
   DB_PATH: './data/app.db',
   TRUST_PROXY: '1',
+  RATE_LIMIT_MAX: '120',
+  RATE_LIMIT_WINDOW_MS: '60000',
+  METRICS_ENABLED: 'false',
 };
 
 /**
@@ -120,6 +123,33 @@ export function loadConfig(env = process.env) {
     errors.push(`CORS_ORIGIN 需为 http(s):// 开头的来源，当前值: ${JSON.stringify(env.CORS_ORIGIN)}`);
   }
 
+  // ---- 应用层限流 ----
+  const rawMax = String(env.RATE_LIMIT_MAX ?? DEFAULTS.RATE_LIMIT_MAX).trim();
+  let RATE_LIMIT_MAX = 0;
+  if (!/^\d+$/.test(rawMax)) {
+    errors.push(`RATE_LIMIT_MAX 必须是非负整数（0 表示关闭限流），当前值: ${JSON.stringify(env.RATE_LIMIT_MAX)}`);
+  } else {
+    RATE_LIMIT_MAX = Number(rawMax);
+  }
+
+  const rawWindow = String(env.RATE_LIMIT_WINDOW_MS ?? DEFAULTS.RATE_LIMIT_WINDOW_MS).trim();
+  let RATE_LIMIT_WINDOW_MS = 0;
+  if (!/^\d+$/.test(rawWindow) || Number(rawWindow) < 1000) {
+    errors.push(
+      `RATE_LIMIT_WINDOW_MS 必须是不小于 1000 的整数，当前值: ${JSON.stringify(env.RATE_LIMIT_WINDOW_MS)}`,
+    );
+  } else {
+    RATE_LIMIT_WINDOW_MS = Number(rawWindow);
+  }
+
+  // ---- METRICS_ENABLED（默认关闭：指标会泄露接口结构，需显式开启）----
+  const rawMetrics = String(env.METRICS_ENABLED ?? DEFAULTS.METRICS_ENABLED).trim().toLowerCase();
+  let METRICS_ENABLED = false;
+  if (rawMetrics === 'true') METRICS_ENABLED = true;
+  else if (rawMetrics !== 'false') {
+    errors.push(`METRICS_ENABLED 只能是 true / false，当前值: ${JSON.stringify(env.METRICS_ENABLED)}`);
+  }
+
   if (errors.length > 0) return { ok: false, errors };
 
   return {
@@ -132,6 +162,9 @@ export function loadConfig(env = process.env) {
       LOG_FORMAT,
       TRUST_PROXY: trust.value,
       CORS_ORIGIN,
+      RATE_LIMIT_MAX,
+      RATE_LIMIT_WINDOW_MS,
+      METRICS_ENABLED,
       PROJECT_ROOT,
       IS_PRODUCTION: NODE_ENV === 'production',
     },

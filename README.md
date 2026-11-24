@@ -63,6 +63,7 @@
 - 所有写操作都有明确成功 / 失败提示
 - 顶部导航常驻，PC 与 375px 手机宽度均可正常使用
 - 服务端具备：健康检查（liveness / readiness 分层）、结构化日志与 requestId 追踪、优雅退出、统一错误结构、在线热备与恢复演练
+- 防护：应用层限流兜底（探针豁免）、可选的 Prometheus `/metrics`；容器侧只读根文件系统、资源上限、禁止提权
 
 ### 2.6 不做的事
 
@@ -175,6 +176,9 @@ Windows 用户也可以直接用脚本：`scripts\setup.ps1` → `scripts\start.
 | `LOG_FORMAT` | 生产 `json` / 其它 `text` | 日志格式：JSON 便于采集，text 便于人读 |
 | `TRUST_PROXY` | `1` | 放在反向代理后面时保持 `1`，以正确识别客户端 IP |
 | `CORS_ORIGIN` | `http://localhost:5173` | 仅开发期需要；生产同源无需跨域 |
+| `RATE_LIMIT_MAX` | `120` | 应用层限流：窗口内允许的请求数，`0` 表示关闭 |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | 限流窗口长度（毫秒，不小于 1000） |
+| `METRICS_ENABLED` | `false` | 是否暴露 Prometheus `/metrics`（默认关闭，避免泄露接口结构） |
 | `BACKUP_DIR` / `BACKUP_KEEP` | `./data/backups` / `7` | 仅备份脚本使用 |
 
 ### 运维命令
@@ -216,6 +220,7 @@ node scripts/loadtest.mjs 'http://127.0.0.1:8080/api/activities?pageSize=20' --d
 │  ├─ 08-环境安装清单.md
 │  ├─ 11-Docker安装完成说明.md
 │  ├─ 12-容量基线与压测.md
+│  ├─ 13-Runbook.md            # 运维手册：启停 / 回滚 / 排障 / 巡检
 │  └─ screenshots/
 ├─ server/                   # 后端
 │  ├─ src/
@@ -302,11 +307,13 @@ npm run verify  # 后端 + 前端 + 构建产物 + 数据库 全量自检
 | `server/test/api.test.js` | 31 | 真实起 HTTP 服务，覆盖 P0 全链路 + 安全头 |
 | `server/test/serving.test.js` | 14 | requestId 透传/生成、错误体一致性、缓存分层、gzip 压缩 |
 | `server/test/health.test.js` | 5 | liveness / readiness 分层：DB 挂掉时 live 仍 200、ready 503 |
+| `server/test/rate-limit.test.js` | 7 | 应用层限流：429 / Retry-After / 分 IP 独立计数 / 探针豁免 |
+| `server/test/metrics.test.js` | 8 | Prometheus 指标：默认关闭、文本格式合法、计数与直方图累加 |
 | `web/src/lib/timeline.test.js` | 14 | 坐标线性性、裁剪、跨月、除零、排序、刻度自适应 |
 | `web/src/lib/time.test.js` | 23 | 日期格式化、区间压缩、时长取整、截止倒计时、表单值互转 |
 | `web/src/api/client.test.js` | 15 | 查询串拼装、请求方法、422/404/网络异常 → ApiError 映射 |
 | `web/src/lib/myPublish.test.js` | 11 | localStorage 增删查、去重、脏数据与不可写场景的降级 |
-| **合计** | **164** | |
+| **合计** | **179** | |
 
 详细结果见 [docs/05-测试记录.md](docs/05-测试记录.md)
 

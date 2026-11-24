@@ -16,6 +16,9 @@ import { activitiesRouter } from './routes/activities.js';
 import { healthRouter, metaRouter, timelineRouter } from './routes/meta.js';
 import { cors, requestId, requestLogger } from './middleware/logger.js';
 import { compression } from './middleware/compression.js';
+import { rateLimit } from './middleware/rate-limit.js';
+import { createMetrics } from './middleware/metrics.js';
+import { pingDatabase } from './lib/repository.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,6 +48,8 @@ export function createApp({
   trustProxy = 1,
   corsOrigin = process.env.CORS_ORIGIN,
   compress = true,
+  rateLimitOptions = {},
+  metricsEnabled = false,
 } = {}) {
   if (!db) throw new Error('createApp: 必须传入 db');
 
@@ -54,11 +59,18 @@ export function createApp({
 
   // ---- 可观测性基础 ----
   app.use(requestId());
+
+  // 指标采集放在最前面，才能统计到所有请求（包括被限流拒绝的）
+  const metrics = metricsEnabled ? createMetrics() : null;
+  if (metrics) app.use(metrics.middleware);
+
   app.use(requestLogger({ enabled: logger, format: logFormat }));
 
   // ---- 通用中间件 ----
   app.use(cors({ origin: corsOrigin }));
   app.use(compression({ enabled: compress }));
+  // 应用层限流兜底：即使不经反代也要防刷（健康检查自动豁免）
+  app.use(rateLimit(rateLimitOptions));
   app.use(express.json({ limit: '100kb' }));
 
   // ---- API ----
@@ -66,6 +78,14 @@ export function createApp({
   app.use('/api/meta', metaRouter());
   app.use('/api/timeline', timelineRouter({ db }));
   app.use('/api/activities', activitiesRouter({ db }));
+
+  // ---- Prometheus 指标（默认关闭，需 METRICS_ENABLED=true）----
+  if (metrics) {
+    app.get('/metrics', (_req, res) => {
+      res.type('text/plain; version=0.0.4; charset=utf-8');
+      res.send(metrics.render({ dbUp: pingDatabase(db) }));
+    });
+  }
 
   // ---- 前端静态资源（生产模式，单端口）----
   const distDir = staticDir ?? (process.env.NODE_ENV === 'production'

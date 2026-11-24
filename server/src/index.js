@@ -32,6 +32,8 @@ const app = createApp({
   staticDir,
   trustProxy: cfg.TRUST_PROXY,
   corsOrigin: cfg.CORS_ORIGIN,
+  rateLimitOptions: { max: cfg.RATE_LIMIT_MAX, windowMs: cfg.RATE_LIMIT_WINDOW_MS },
+  metricsEnabled: cfg.METRICS_ENABLED,
 });
 
 const server = app.listen(cfg.PORT, cfg.HOST, () => {

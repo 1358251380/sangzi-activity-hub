@@ -7,6 +7,12 @@
 #                 │                    │
 #              TLS/gzip/限流/安全头    SQLite → 命名卷
 #
+# 容器加固（两个服务都做了）：
+#   read_only           根文件系统只读，进程无法落地恶意文件
+#   tmpfs               需要写的目录（/tmp 等）挂内存盘
+#   no-new-privileges   禁止通过 setuid 等提权
+#   deploy.resources    限制 CPU / 内存，防止单容器耗尽宿主机
+#
 services:
   app:
     build:
@@ -26,11 +32,25 @@ services:
       DB_PATH: /app/data/app.db
       LOG_FORMAT: json
       TRUST_PROXY: "1"
+      # 应用层限流兜底（反代之外的第二道防线）
+      RATE_LIMIT_MAX: "120"
+      RATE_LIMIT_WINDOW_MS: "60000"
     volumes:
       # 关键：SQLite 文件必须在卷上。
       # 若挂在容器可写层，容器重建/升级后所有活动和评论都会丢 —— 直接违反
       # 任务书"刷新后数据不丢"的要求在容器场景下的延伸。
       - app-data:/app/data
+    # ---- 加固 ----
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
     restart: unless-stopped
     healthcheck:
       # 用 readiness 而不是 liveness：数据库不可用时容器应标记 unhealthy
@@ -61,6 +81,20 @@ services:
       - ./nginx/snippets:/etc/nginx/snippets:ro
       # 证书目录（不随镜像发布，由 scripts/gen-cert 生成）
       - ./nginx/certs:/etc/nginx/certs:ro
+    # ---- 加固 ----
+    read_only: true
+    tmpfs:
+      # nginx 运行时需要的可写目录
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
     depends_on:
       app:
         # 等应用真正就绪（readiness 通过）再启动，避免启动瞬间 502
